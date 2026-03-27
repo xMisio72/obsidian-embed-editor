@@ -1,0 +1,39 @@
+/* Seamless Embeds — make ![[]] transclusions look like inline text
+   Scoped to markdown views only — excludes Canvas */
+
+/* Red synced-block frame */
+.markdown-reading-view .markdown-embed,
+.markdown-source-view .markdown-embed {
+  border: 1.5px solid #e03e3e !important;
+  border-radius: 6px !important;
+  padding: 12px 16px !important;
+  margin: 8px 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Remove the embed title bar / link header */
+.markdown-reading-view .markdown-embed .markdown-embed-title,
+.markdown-source-view .markdown-embed .markdown-embed-title {
+  display: none !important;
+}
+
+/* Remove the embed link icon (the chain link) */
+.markdown-reading-view .markdown-embed-link,
+.markdown-source-view .markdown-embed-link {
+  display: none !important;
+}
+
+/* Remove internal scrollbar — let content flow naturally */
+.markdown-reading-view .markdown-embed .markdown-embed-content,
+.markdown-source-view .markdown-embed .markdown-embed-content {
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+/* Remove the extra padding on the preview inside embeds */
+.markdown-reading-view .markdown-embed .markdown-preview-view,
+.markdown-source-view .markdown-embed .markdown-preview-view {
+  padding: 0 !important;
+}

@@ -1,0 +1,10 @@
+{
+  "id": "embed-editor",
+  "name": "Embed Editor",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "Notion-style synced blocks for Obsidian. Click any transclusion (![[note]]) to edit its source in a floating panel — edit embeds in place.",
+  "author": "xMisio72",
+  "authorUrl": "https://github.com/xMisio72",
+  "isDesktopOnly": false
+}
