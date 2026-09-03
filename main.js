@@ -261,10 +261,17 @@ class SyncedEditPlugin extends obsidian.Plugin {
   resolveSubpath(lines, subpath, filePath) {
     if (subpath.startsWith("^")) {
       const blockId = subpath.substring(1);
+      const escaped = blockId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const anchorRe = new RegExp(`(^|\\s)\\^${escaped}\\s*$`);
       for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes(`^${blockId}`)) {
-          return { start: i, end: i + 1 };
-        }
+        if (!anchorRe.test(lines[i])) continue;
+        // Anchor trailing on the block's own line - that line is the block.
+        if (lines[i].trim() !== `^${blockId}`) return { start: i, end: i + 1 };
+        // Anchor on its own line - the block is the paragraph above it.
+        let start = i;
+        while (start > 0 && lines[start - 1].trim() !== "" && !/^#{1,6}\s/.test(lines[start - 1])) start--;
+        if (start === i) return { start: i, end: i + 1 };  // degenerate: nothing above
+        return { start, end: i };  // anchor line stays outside the edit range
       }
       return null;
     }
