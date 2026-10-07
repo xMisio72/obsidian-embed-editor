@@ -260,13 +260,7 @@ class SyncedEditPlugin extends obsidian.Plugin {
 
   resolveSubpath(lines, subpath, filePath) {
     if (subpath.startsWith("^")) {
-      const blockId = subpath.substring(1);
-      for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes(`^${blockId}`)) {
-          return { start: i, end: i + 1 };
-        }
-      }
-      return null;
+      return this.resolveBlockRef(lines, subpath.substring(1), filePath);
     }
 
     const heading = subpath;
@@ -311,6 +305,61 @@ class SyncedEditPlugin extends obsidian.Plugin {
       }
     }
 
+    return null;
+  }
+
+  // Block reference (^id): the range Obsidian itself renders for the embed.
+  // Uses the metadata cache first, so a block is the whole paragraph/table/code
+  // block and a list item includes its nested children (#1). Falls back to a
+  // text scan when the cache has not indexed the file yet.
+  resolveBlockRef(lines, blockId, filePath) {
+    const file = this.app.vault.getAbstractFileByPath(filePath);
+    const cache = file ? this.app.metadataCache.getFileCache(file) : null;
+    const block = cache && cache.blocks ? cache.blocks[blockId] : null;
+
+    let start, end;
+    if (block) {
+      start = block.position.start.line;
+      end = block.position.end.line + 1;
+
+      // A list item's block covers only its own line: extend it over every
+      // descendant item, the way the rendered embed shows them.
+      const items = cache.listItems || [];
+      const idx = items.findIndex((it) => it.position.start.line === start);
+      if (idx !== -1) {
+        const subtree = new Set([items[idx].position.start.line]);
+        for (let j = idx + 1; j < items.length; j++) {
+          if (!subtree.has(items[j].parent)) break;
+          subtree.add(items[j].position.start.line);
+          end = Math.max(end, items[j].position.end.line + 1);
+        }
+      }
+    } else {
+      const found = this.scanBlockRef(lines, blockId);
+      if (!found) return null;
+      start = found.start;
+      end = found.end;
+    }
+
+    // An id on its own line stays outside the edit range so that rewriting
+    // the panel cannot delete it (that would break every embed of the block).
+    if (end - start > 1 && lines[end - 1].trim() === `^${blockId}`) end--;
+
+    return { start, end };
+  }
+
+  // Fallback without the cache: find the anchor line; an id on its own line
+  // belongs to the block above it (up to a blank line or a heading).
+  scanBlockRef(lines, blockId) {
+    const escaped = blockId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const anchorRe = new RegExp(`(^|\\s)\\^${escaped}\\s*$`);
+    for (let i = 0; i < lines.length; i++) {
+      if (!anchorRe.test(lines[i])) continue;
+      if (lines[i].trim() !== `^${blockId}`) return { start: i, end: i + 1 };
+      let start = i;
+      while (start > 0 && lines[start - 1].trim() !== "" && !/^#{1,6}\s/.test(lines[start - 1])) start--;
+      return { start, end: i + 1 };
+    }
     return null;
   }
 
